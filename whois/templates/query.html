@@ -1,0 +1,14 @@
+$def with (output="")
+
+$var title: Hostname Lookup
+
+<p>Enter a hostname hosted by scripts.mit.edu:</p>
+
+<form action="/whois/" method="post">
+	<input name="hostname" />
+	<input name="submit" type="submit" value="Lookup" />
+</form>
+
+<pre>
+$:output
+</pre>
