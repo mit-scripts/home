@@ -39,7 +39,7 @@ class lookup(object):
     def canonicalize(self, vhost):
         return vhost.lower().rstrip(".")
     def searchLDAP(self, vhost):
-        attrlist = ('scriptsVhostName', 'scriptsVhostAlias', 'homeDirectory', 'scriptsVhostDirectory', 'uid')
+        attrlist = ('scriptsVhostName', 'scriptsVhostAlias', 'homeDirectory', 'scriptsVhostDirectory', 'uid', 'scriptsVhostPoolIPv4')
         results = self.ldap.search_st(self.ldap_base, ldap.SCOPE_SUBTREE,
             ldap.filter.filter_format(
                 '(|(scriptsVhostName=%s)(scriptsVhostAlias=%s))', (vhost,)*2),
@@ -49,6 +49,12 @@ class lookup(object):
             attrs = result[1]
             for attr in attrlist:
                 attrs[attr] = ', '.join(list(map(lambda x: x.decode('utf8'), attrs[attr])))
+            pool_results = self.ldap.search_st('ou=Pools,dc=scripts,dc=mit,dc=edu', ldap.SCOPE_SUBTREE, "scriptsVhostPoolIPv4=%s" % (attrs['scriptsVhostPoolIPv4']), ["description"])
+            # remember to only do this if the pool exists
+            if len(pool_results) >= 1:
+                attrs["description"] = pool_results[0][1]["description"][0]
+            else:
+                attrs["description"] = attrs["scriptsVhostPoolIPv4"]
             return attrs
         else:
             return None
@@ -69,6 +75,7 @@ class lookup(object):
             return """Hostname: <a href="http://%(scriptsVhostName)s">%(scriptsVhostName)s</a>
 Alias: %(scriptsVhostAlias)s
 Locker: %(uid)s
+Pool: %(description)s
 Document Root: %(docRoot)s""" % info
         elif tries == 3:
             return "The whois server is experiencing problems looking up LDAP records.\nPlease contact scripts@mit.edu for help if this problem persists."
