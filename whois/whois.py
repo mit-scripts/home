@@ -48,7 +48,8 @@ class lookup(object):
             result = results[0]
             attrs = result[1]
             for attr in attrlist:
-                attrs[attr] = ', '.join(list(map(lambda x: x.decode('utf8'), attrs[attr])))
+		if attr in attrs:
+		    attrs[attr] = ', '.join(list(map(lambda x: x.decode('utf8'), attrs[attr])))
             pool_results = self.ldap.search_st('ou=Pools,dc=scripts,dc=mit,dc=edu', ldap.SCOPE_SUBTREE, "scriptsVhostPoolIPv4=%s" % (attrs['scriptsVhostPoolIPv4']), ["description"])
             # remember to only do this if the pool exists
             if len(pool_results) >= 1:
@@ -71,6 +72,7 @@ class lookup(object):
                 self.ldap.unbind()
                 self.ldap = ldap.initialize(self.ldap_URL)
         if info:
+            info['scriptsVhostAlias'] = info.get('scriptsVhostAlias', '-')
             info['docRoot'] = posixpath.join(info['homeDirectory'], 'web_scripts', info['scriptsVhostDirectory'])
             return """Hostname: <a href="http://%(scriptsVhostName)s">%(scriptsVhostName)s</a>
 Alias: %(scriptsVhostAlias)s
