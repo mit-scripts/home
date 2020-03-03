@@ -1,0 +1,19 @@
+<Files whois.py>
+    SetHandler fcgid-script
+</Files>
+
+RewriteEngine on
+RewriteBase /whois
+RewriteCond %{REQUEST_URI} !^/icons
+RewriteCond %{REQUEST_URI} !^/styles
+RewriteCond %{REQUEST_URI} !^/favicon.ico$
+RewriteCond %{REQUEST_URI} !^(/.*)+whois.py/
+RewriteRule ^(.*)$ whois.py/$1 [PT]
+
+# Require either MITnet or certs
+#Require env SCRIPTS_REMOTE_MITNET
+
+AuthType SSLCert
+Require afsgroup system:scripts-team-members system:scripts-pony-acl system:ops-group system:rccsuper system:olcsuper system:helpsuper system:accounts-internal system:gnetwork system:itss-admin
+
+ErrorDocument 401 /__scripts/needcerts/
