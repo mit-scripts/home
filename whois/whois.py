@@ -43,14 +43,18 @@ class lookup(object):
         results = self.ldap.search_st(self.ldap_base, ldap.SCOPE_SUBTREE,
             ldap.filter.filter_format(
                 '(|(scriptsVhostName=%s)(scriptsVhostAlias=%s))', (vhost,)*2),
-                timeout=5)
+                attrlist=attrlist, timeout=5)
         if results:
             result = results[0]
             attrs = result[1]
             for attr in attrlist:
 		if attr in attrs:
 		    attrs[attr] = ', '.join(list(map(lambda x: x.decode('utf8'), attrs[attr])))
-            if 'scriptsVhostPoolIPv4' in attrs:
+            default_results = self.ldap.search_st(self.ldap_base, ldap.SCOPE_SUBTREE,
+                ldap.filter.filter_format(
+                    '(|(scriptsVhostName=%s)(scriptsVhostAlias=%s))', (vhost,)*2),
+                    timeout=5)
+            if 'scriptsVhostPoolIPv4' in default_results[0][1]:
                 pool_results = self.ldap.search_st('ou=Pools,dc=scripts,dc=mit,dc=edu', ldap.SCOPE_SUBTREE, "scriptsVhostPoolIPv4=%s" % (attrs['scriptsVhostPoolIPv4']), ["description"])
                 if pool_results:
                     attrs["description"] = pool_results[0][1]["description"][0]
@@ -80,6 +84,7 @@ Locker: %(uid)s
 Document Root: %(docRoot)s""" % info
             if 'description' in info:
                 result += "\nPool: %(description)s" % info
+            return result
         elif tries == 3:
             return "The whois server is experiencing problems looking up LDAP records.\nPlease contact scripts@mit.edu for help if this problem persists."
         return "No such hostname"
