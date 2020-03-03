@@ -43,19 +43,19 @@ class lookup(object):
         results = self.ldap.search_st(self.ldap_base, ldap.SCOPE_SUBTREE,
             ldap.filter.filter_format(
                 '(|(scriptsVhostName=%s)(scriptsVhostAlias=%s))', (vhost,)*2),
-                attrlist=attrlist, timeout=5)
-        if len(results) >= 1:
+                timeout=5)
+        if results:
             result = results[0]
             attrs = result[1]
             for attr in attrlist:
 		if attr in attrs:
 		    attrs[attr] = ', '.join(list(map(lambda x: x.decode('utf8'), attrs[attr])))
-            pool_results = self.ldap.search_st('ou=Pools,dc=scripts,dc=mit,dc=edu', ldap.SCOPE_SUBTREE, "scriptsVhostPoolIPv4=%s" % (attrs['scriptsVhostPoolIPv4']), ["description"])
-            # remember to only do this if the pool exists
-            if len(pool_results) >= 1:
-                attrs["description"] = pool_results[0][1]["description"][0]
-            else:
-                attrs["description"] = attrs["scriptsVhostPoolIPv4"]
+            if 'scriptsVhostPoolIPv4' in attrs:
+                pool_results = self.ldap.search_st('ou=Pools,dc=scripts,dc=mit,dc=edu', ldap.SCOPE_SUBTREE, "scriptsVhostPoolIPv4=%s" % (attrs['scriptsVhostPoolIPv4']), ["description"])
+                if pool_results:
+                    attrs["description"] = pool_results[0][1]["description"][0]
+                else:
+                    attrs["description"] = attrs["scriptsVhostPoolIPv4"]
             return attrs
         else:
             return None
@@ -74,11 +74,12 @@ class lookup(object):
         if info:
             info['scriptsVhostAlias'] = info.get('scriptsVhostAlias', '-')
             info['docRoot'] = posixpath.join(info['homeDirectory'], 'web_scripts', info['scriptsVhostDirectory'])
-            return """Hostname: <a href="http://%(scriptsVhostName)s">%(scriptsVhostName)s</a>
+            result = """Hostname: <a href="http://%(scriptsVhostName)s">%(scriptsVhostName)s</a>
 Alias: %(scriptsVhostAlias)s
 Locker: %(uid)s
-Pool: %(description)s
 Document Root: %(docRoot)s""" % info
+            if 'description' in info:
+                result += "\nPool: %(description)s" % info
         elif tries == 3:
             return "The whois server is experiencing problems looking up LDAP records.\nPlease contact scripts@mit.edu for help if this problem persists."
         return "No such hostname"
