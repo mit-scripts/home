@@ -54,12 +54,13 @@ class lookup(object):
                 ldap.filter.filter_format(
                     '(|(scriptsVhostName=%s)(scriptsVhostAlias=%s))', (vhost,)*2),
                     timeout=5)
-            if 'scriptsVhostPoolIPv4' in default_results[0][1]:
-                pool_results = self.ldap.search_st('ou=Pools,dc=scripts,dc=mit,dc=edu', ldap.SCOPE_SUBTREE, "scriptsVhostPoolIPv4=%s" % (attrs['scriptsVhostPoolIPv4']), ["description"])
-                if pool_results:
-                    attrs["description"] = pool_results[0][1]["description"][0]
-                else:
-                    attrs["description"] = attrs["scriptsVhostPoolIPv4"]
+            pool_results = self.ldap.search_st('ou=Pools,dc=scripts,dc=mit,dc=edu', ldap.SCOPE_SUBTREE, "scriptsVhostPoolIPv4=%s" % (attrs['scriptsVhostPoolIPv4']), ["description"])
+            if pool_results:
+                attrs["description"] = pool_results[0][1]["description"][0]
+            else:
+                attrs["description"] = attrs["scriptsVhostPoolIPv4"]
+            if 'scriptsVhostPoolIPv4' not in default_results[0][1]:
+                attrs["description"] = "Default (" + attrs["description"] + ")"
             return attrs
         else:
             return None
